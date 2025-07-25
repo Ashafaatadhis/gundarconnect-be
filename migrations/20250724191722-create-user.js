@@ -31,10 +31,10 @@ module.exports = {
         type: Sequelize.STRING,
         defaultValue: "",
       },
-      major: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
+      // major: {
+      //   type: Sequelize.STRING,
+      //   allowNull: false,
+      // },
       studentId: {
         type: Sequelize.STRING,
         allowNull: false,

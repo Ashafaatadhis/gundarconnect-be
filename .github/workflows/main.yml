@@ -28,7 +28,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ashafaatadhis/gundarconnect-fe:latest
+          tags: ashafaatadhis/gundarconnect-be:latest
 
       - name: SSH to VPS and deploy frontend
         uses: appleboy/ssh-action@v1.0.3

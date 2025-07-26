@@ -27,6 +27,7 @@ const allowedOrigins = process.env.FRONTEND_URL?.split(",") ?? [
   "http://localhost:5173",
 ];
 
+// corsss
 app.use(
   cors({
     origin: allowedOrigins,

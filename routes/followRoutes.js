@@ -2,7 +2,7 @@
 
 const express = require("express");
 const router = express.Router();
-const { UserFollowers } = require("../models");
+const { Userfollowers } = require("../models");
 const protect = require("../middleware/auth").protect;
 
 // FOLLOW user
@@ -17,7 +17,7 @@ router.post("/follow", protect, async (req, res) => {
   }
 
   try {
-    await UserFollowers.findOrCreate({
+    await Userfollowers.findOrCreate({
       where: { followerId, followingId },
     });
 
@@ -34,7 +34,7 @@ router.post("/unfollow", protect, async (req, res) => {
   const { followingId } = req.body;
 
   try {
-    await UserFollowers.destroy({
+    await Userfollowers.destroy({
       where: { followerId, followingId },
     });
     res.status(200).json({ message: "Unfollowed successfully" });
@@ -50,7 +50,7 @@ router.get("/status/:userId", protect, async (req, res) => {
   const followingId = req.params.userId;
 
   try {
-    const result = await UserFollowers.findOne({
+    const result = await Userfollowers.findOne({
       where: { followerId, followingId },
     });
 
@@ -66,11 +66,11 @@ router.get("/stats/:userId", protect, async (req, res) => {
   const userId = req.params.userId;
 
   try {
-    const followers = await UserFollowers.count({
+    const followers = await Userfollowers.count({
       where: { followingId: userId },
     });
 
-    const following = await UserFollowers.count({
+    const following = await Userfollowers.count({
       where: { followerId: userId },
     });
 

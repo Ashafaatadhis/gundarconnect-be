@@ -68,7 +68,9 @@ const io = socketIo(server, {
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
+
   socket.on("identify", (userId) => {
+    console.log("User identified:", userId);
     socket.join(`user_${userId}`);
   });
 });

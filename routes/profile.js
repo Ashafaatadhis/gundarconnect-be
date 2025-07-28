@@ -35,8 +35,14 @@ router.get("/username/:username", async (req, res) => {
             },
           ],
         },
+        {
+          model: User,
+          as: "likes",
+          attributes: ["id", "username"],
+        },
       ],
     });
+
     const userData = {
       id: user.id,
       username: user.username,
@@ -79,8 +85,14 @@ router.get("/:userId", protect, async (req, res) => {
             },
           ],
         },
+        {
+          model: User,
+          as: "likes",
+          attributes: ["id", "username"],
+        },
       ],
     });
+
     // Pastikan field bio dan avatar selalu ada
     const userData = {
       id: user.id,

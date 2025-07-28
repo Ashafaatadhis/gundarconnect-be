@@ -7,8 +7,10 @@ const Notification = require("../models/Notification");
 const { getPostById } = require("../controllers/postController");
 const upload = require("../middleware/upload");
 
+// GET: Single Post
 router.get("/:id", getPostById);
-// Get all posts (feed)
+
+// GET: All Posts (feed)
 router.get("/", async (req, res) => {
   try {
     const posts = await Post.findAll({
@@ -30,7 +32,11 @@ router.get("/", async (req, res) => {
             },
           ],
         },
-        { model: User, as: "likes", attributes: ["id", "username"] },
+        {
+          model: User,
+          as: "likes",
+          attributes: ["id", "username"],
+        },
       ],
     });
     res.json(posts);
@@ -39,7 +45,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Create new post
+// POST: Create new post
 router.post("/", protect, upload.single("image"), async (req, res) => {
   try {
     const { content } = req.body;
@@ -66,35 +72,20 @@ router.post("/", protect, upload.single("image"), async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-// router.post('/', protect, async (req, res) => {
-//   try {
-//     const { content, image } = req.body;
-//     const post = await Post.create({
-//       authorId: req.user.id,
-//       content,
-//       image
-//     });
-//     const populatedPost = await Post.findByPk(post.id, {
-//       include: [{ model: User, as: 'author', attributes: ['id', 'username', 'fullName', 'avatar'] }]
-//     });
-//     res.status(201).json(populatedPost);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// });
 
-// Like/Unlike a post
+// POST: Like/Unlike a post
 router.post("/:postId/like", protect, async (req, res) => {
   try {
     const post = await Post.findByPk(req.params.postId);
-    if (!post) {
-      return res.status(404).json({ message: "Post not found" });
-    }
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
     const user = await User.findByPk(req.user.id);
     const liked = await post.hasLike(user);
+
     if (!liked) {
       await post.addLike(user);
-      // Trigger notification
+
+      // Create notification
       if (post.authorId !== user.id) {
         const notif = await Notification.create({
           type: "like",
@@ -103,7 +94,15 @@ router.post("/:postId/like", protect, async (req, res) => {
           actorId: user.id,
           postId: post.id,
         });
-        // Emit realtime notification
+
+        // Tambahkan data actor ke notif sebelum dikirim lewat socket
+        notif.dataValues.actor = {
+          id: user.id,
+          username: user.username,
+          fullName: user.fullName,
+          avatar: user.avatar,
+        };
+
         req.app
           .get("io")
           .to(`user_${post.authorId}`)
@@ -112,9 +111,11 @@ router.post("/:postId/like", protect, async (req, res) => {
     } else {
       await post.removeLike(user);
     }
+
     const updatedPost = await Post.findByPk(post.id, {
       include: [{ model: User, as: "likes", attributes: ["id", "username"] }],
     });
+
     res.json(updatedPost);
   } catch (error) {
     console.error("LIKE ERROR:", error);
@@ -122,21 +123,21 @@ router.post("/:postId/like", protect, async (req, res) => {
   }
 });
 
-// Add comment to post
+// POST: Add comment
 router.post("/:postId/comments", protect, async (req, res) => {
   try {
     const { content, image } = req.body;
     const post = await Post.findByPk(req.params.postId);
-    if (!post) {
-      return res.status(404).json({ message: "Post not found" });
-    }
+    if (!post) return res.status(404).json({ message: "Post not found" });
+
     const comment = await Comment.create({
       postId: post.id,
       authorId: req.user.id,
       content,
       image,
     });
-    // Trigger notification
+
+    // Create notification
     if (post.authorId !== req.user.id) {
       const notif = await Notification.create({
         type: "comment",
@@ -148,8 +149,18 @@ router.post("/:postId/comments", protect, async (req, res) => {
         postId: post.id,
         commentId: comment.id,
       });
+
+      // Tambahkan data actor manual
+      notif.dataValues.actor = {
+        id: req.user.id,
+        username: req.user.username,
+        fullName: req.user.fullName,
+        avatar: req.user.avatar,
+      };
+
       req.app.get("io").to(`user_${post.authorId}`).emit("notification", notif);
     }
+
     const updatedPost = await Post.findByPk(post.id, {
       include: [
         {
@@ -170,24 +181,23 @@ router.post("/:postId/comments", protect, async (req, res) => {
         },
       ],
     });
+
     res.json(updatedPost);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// Delete post
+// DELETE: Post
 router.delete("/:postId", protect, async (req, res) => {
   try {
     const post = await Post.findByPk(req.params.postId);
-    if (!post) {
-      return res.status(404).json({ message: "Post not found" });
-    }
-    if (post.authorId !== req.user.id) {
+    if (!post) return res.status(404).json({ message: "Post not found" });
+    if (post.authorId !== req.user.id)
       return res
         .status(403)
         .json({ message: "Not authorized to delete this post" });
-    }
+
     await post.destroy();
     res.json({ message: "Post deleted successfully" });
   } catch (error) {

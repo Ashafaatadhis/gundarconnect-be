@@ -8,15 +8,21 @@ const { Post, Comment } = require("./models/Post");
 const User = require("./models/User");
 
 const authRoutes = require("./routes/auth");
+const adminAuthRoutes = require("./routes/authAdmin");
 const userRoutes = require("./routes/users");
 const postRoutes = require("./routes/posts");
 const profileRoutes = require("./routes/profile");
+const isAdmin = require("./middleware/isAdmin");
+const reportRoutes = require("./routes/report");
 const savedRoutes = require("./routes/saved");
 // const searchRoutes = require('./routes/search');
 const searchRoutes = require("./routes/search");
+const platformSettingRoutes = require("./routes/platform-setting");
 const aboutRoutes = require("./routes/about");
 const notificationsRoutes = require("./routes/notifications");
 const followRoutes = require("./routes/followRoutes");
+const adminRoutes = require("./routes/admin");
+
 const app = express();
 
 require("dotenv").config();
@@ -44,7 +50,13 @@ app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 // ✅ Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/admin/auth", adminAuthRoutes);
+
+app.use("/api/admin", isAdmin, adminRoutes);
+
 app.use("/api/users", userRoutes);
+app.use("/api/platform-settings", platformSettingRoutes);
+app.use("/api/reports", reportRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/saved", savedRoutes);
@@ -56,6 +68,7 @@ app.use("/api/search", searchRoutes);
 // ✅ Socket.io setup
 const http = require("http");
 const socketIo = require("socket.io");
+const { platform } = require("os");
 
 const server = http.createServer(app);
 const io = socketIo(server, {

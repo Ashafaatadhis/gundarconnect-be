@@ -15,6 +15,7 @@ User.init(
       allowNull: false,
       unique: true,
     },
+
     password: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -26,6 +27,14 @@ User.init(
     avatar: {
       type: DataTypes.STRING,
       defaultValue: "default-avatar.png",
+    },
+    role: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "user", // default: user biasa
+      validate: {
+        isIn: [["user", "admin"]],
+      },
     },
     bio: {
       type: DataTypes.STRING,

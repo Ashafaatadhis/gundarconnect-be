@@ -5,7 +5,7 @@ const User = require("../models/User");
 const { Post, Comment } = require("../models/Post");
 const upload = require("../middleware/upload");
 
-// Get user profile by username
+// Get user profile by username test
 router.get("/username/:username", async (req, res) => {
   try {
     const user = await User.findOne({

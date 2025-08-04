@@ -7,6 +7,7 @@ const Notification = require("../models/Notification");
 const { getPostById } = require("../controllers/postController");
 const upload = require("../middleware/upload");
 const PlatformSetting = require("../models/PlatformSetting");
+const moderateGroq = require("../middleware/groq-moderate");
 
 // GET: Single Post
 router.get("/:id", getPostById);
@@ -47,55 +48,40 @@ router.get("/", async (req, res) => {
 });
 
 // POST: Create new post
-router.post("/", protect, upload.single("image"), async (req, res) => {
-  try {
-    const { content } = req.body;
-    const image = req.file ? `/uploads/${req.file.filename}` : null;
+router.post(
+  "/",
+  protect,
+  upload.single("image"),
+  moderateGroq,
 
-    // 🔍 Ambil setting moderasi
-    const setting = await PlatformSetting.findOne();
+  async (req, res) => {
+    try {
+      const { content } = req.body;
+      const image = req.file ? `/uploads/${req.file.filename}` : null;
 
-    if (setting && setting.autoModeration && setting.bannedWords) {
-      const bannedWords = setting.bannedWords
-        .split(",")
-        .map((word) => word.trim().toLowerCase());
+      // Jika lolos, baru buat post
+      const post = await Post.create({
+        authorId: req.user.id,
+        content,
+        image,
+      });
 
-      const contentLower = content.toLowerCase();
+      const populatedPost = await Post.findByPk(post.id, {
+        include: [
+          {
+            model: User,
+            as: "author",
+            attributes: ["id", "username", "fullName", "avatar"],
+          },
+        ],
+      });
 
-      const hasBannedWord = bannedWords.some((word) =>
-        contentLower.includes(word)
-      );
-
-      if (hasBannedWord) {
-        return res.status(400).json({
-          message:
-            "Postingan mengandung kata yang dilarang oleh sistem moderasi.",
-        });
-      }
+      res.status(201).json(populatedPost);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
     }
-
-    // Jika lolos, baru buat post
-    const post = await Post.create({
-      authorId: req.user.id,
-      content,
-      image,
-    });
-
-    const populatedPost = await Post.findByPk(post.id, {
-      include: [
-        {
-          model: User,
-          as: "author",
-          attributes: ["id", "username", "fullName", "avatar"],
-        },
-      ],
-    });
-
-    res.status(201).json(populatedPost);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
   }
-});
+);
 
 // POST: Like/Unlike a post
 router.post("/:postId/like", protect, async (req, res) => {

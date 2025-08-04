@@ -529,11 +529,11 @@ router.get("/reports", async (req, res) => {
         },
         {
           model: Post,
-          attributes: ["id", "content", "createdAt", "authorId"],
+          attributes: ["id", "content", "image", "createdAt", "authorId"],
           include: [
             {
               model: User,
-              as: "author", // pastikan ini sesuai alias di model Post.js
+              as: "author",
               attributes: ["id", "fullName", "avatar"],
             },
           ],
@@ -541,7 +541,28 @@ router.get("/reports", async (req, res) => {
       ],
     });
 
-    res.json(reports);
+    const result = await Promise.all(
+      reports.map(async (report) => {
+        const post = report.Post;
+        if (!post) return report.toJSON(); // jika report tanpa post
+
+        const [commentCount, likeUsers] = await Promise.all([
+          Comment.count({ where: { postId: post.id } }),
+          post.getLikes(), // ini ambil semua user yang like
+        ]);
+
+        return {
+          ...report.toJSON(),
+          Post: {
+            ...post.toJSON(),
+            comments: commentCount,
+            likes: likeUsers.length,
+          },
+        };
+      })
+    );
+
+    res.json(result);
   } catch (error) {
     console.error("Get Reports Error:", error);
     res.status(500).json({ message: "Gagal mengambil laporan" });

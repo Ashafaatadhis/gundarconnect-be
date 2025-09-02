@@ -55,7 +55,7 @@ If flagged, give a short reason like "Hate speech", "Spam", "Harassment", etc.`;
         }
       } catch (err) {
         console.warn(
-          "⚠️ Groq moderation failed, fallback ke manual:",
+          "⚠️ Groq moderation failed, fallback ke manual TEST EROR:",
           err.message
         );
         // fallback ke cek bannedWords
